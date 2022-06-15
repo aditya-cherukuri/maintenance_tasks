@@ -40,6 +40,7 @@ module MaintenanceTasks
       Task.available_tasks.map(&:to_s)
     } }
     validate :csv_attachment_presence, on: :create
+    validate :csv_content_type, on: :create
     validate :validate_task_arguments, on: :create
 
     attr_readonly :task_name
@@ -342,6 +343,18 @@ module MaintenanceTasks
       nil
     end
 
+    # Performs validation on the content type of the :csv_file attachment.
+    # A Run for a Task that uses CsvCollection must have a present :csv_file
+    # and a content type of "text/csv" to be valid. The appropriate error is
+    # added if the Run does not meet the above criteria.
+    def csv_content_type
+      if csv_task_with_file_present? && csv_file.content_type != "text/csv"
+        errors.add(:csv_file, "must have a content_type of text/csv")
+      end
+    rescue Task::NotFoundError
+      nil
+    end
+
     # Support iterating over ActiveModel::Errors in Rails 6.0 and Rails 6.1+.
     # To be removed when Rails 6.0 is no longer supported.
     if Rails::VERSION::STRING.match?(/^6.0/)
@@ -431,6 +444,10 @@ module MaintenanceTasks
       return value unless limit
 
       value&.first(limit)
+    end
+
+    def csv_task_with_file_present?
+      Task.named(task_name).has_csv_content? && csv_file.present?
     end
   end
 end

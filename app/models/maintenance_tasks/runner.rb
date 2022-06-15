@@ -45,6 +45,7 @@ module MaintenanceTasks
       if csv_file
         run.csv_file.attach(csv_file)
         run.csv_file.filename = filename(name)
+        run.csv_file.content_type = content_type(csv_file)
       end
       job = instantiate_job(run)
       run.job_id = job.job_id
@@ -69,6 +70,12 @@ module MaintenanceTasks
     def filename(task_name)
       formatted_task_name = task_name.underscore.gsub("/", "_")
       "#{Time.now.utc.strftime("%Y%m%dT%H%M%SZ")}_#{formatted_task_name}.csv"
+    end
+
+    def content_type(csv_file)
+      return csv_file.content_type if csv_file.respond_to?(:content_type)
+
+      "text/csv"
     end
 
     def instantiate_job(run)
